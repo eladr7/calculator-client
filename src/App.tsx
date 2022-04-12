@@ -1,5 +1,5 @@
 import React from "react";
-import { Calculation } from "./components/Calculation";
+import { CalculationExec } from "./components/CalculationExec";
 import { CalculationsHeader } from "./components/CalculationsHeader";
 import { CalculationsContextProvider } from "./components/context/CalculationsContext";
 import { CalculationsHistory } from "./components/CalculationsHistory";
@@ -11,7 +11,7 @@ const App: React.FC<AppProps> = ({}) => {
       <header className="App-header">
         <CalculationsContextProvider>
           <CalculationsHeader />
-          <Calculation />
+          <CalculationExec />
           <CalculationsHistory />
         </CalculationsContextProvider>
       </header>

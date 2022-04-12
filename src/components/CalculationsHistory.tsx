@@ -16,7 +16,7 @@ export const CalculationsHistory: React.FC<CalculationsHistoryProps> = ({}) => {
           }}
         >
           <input
-            style={{ marginTop: "44px", marginRight: "20px" }}
+            style={{ marginTop: "40px", marginRight: "20px" }}
             type="checkbox"
             onChange={() =>
               dispatch({

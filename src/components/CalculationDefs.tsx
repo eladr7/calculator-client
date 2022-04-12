@@ -4,11 +4,11 @@ export const CALCULATION_ACTIONS = {
 };
 
 export const CALCULATION_TYPES = {
-  ADD: "+",
-  SUBTRACT: "-",
-  MULTIPLY: "*",
-  DIVIDE: "/",
-  SQRT: "√",
+  ADD: "add",
+  SUBTRACT: "sub",
+  MULTIPLY: "mul",
+  DIVIDE: "div",
+  SQRT: "sqrt",
 };
 
 export interface Calculation {
