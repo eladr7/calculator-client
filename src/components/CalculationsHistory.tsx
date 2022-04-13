@@ -28,7 +28,7 @@ export const CalculationsHistory: React.FC<CalculationsHistoryProps> = ({}) => {
               })
             }
           />
-          <p>Your calculation is: {calculation.calculation}</p>
+          <p>{calculation.calculation}</p>
         </div>
       ))}
     </div>
