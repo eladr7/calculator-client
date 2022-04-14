@@ -7,7 +7,7 @@ export const CalculationsHeader: React.FC<CalculationsHeaderProps> = ({}) => {
   const { calculations } = useContext(CalculationsContext);
   return (
     <div>
-      <h2>You pefromed {calculations.length} calculations</h2>
+      <h2>Here are {calculations.length} of your calculations</h2>
     </div>
   );
 };

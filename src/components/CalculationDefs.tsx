@@ -28,7 +28,7 @@ export const CALCULATION_TYPES: CalculationType[] = [
   {
     operationName: "Divide",
     operationExecutionName: "div",
-    annotation: "-",
+    annotation: "/",
   },
   {
     operationName: "Square Root",

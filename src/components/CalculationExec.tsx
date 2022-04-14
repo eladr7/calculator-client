@@ -6,7 +6,7 @@ import {
   SUCCESS_STATUS,
 } from "./CalculationDefs";
 import { CalculationsContext } from "./context/CalculationsContext";
-import { fromUtf8, SecretNetworkClient, Wallet } from "secretjs";
+import { fromUtf8, SecretNetworkClient } from "secretjs";
 
 declare global {
   interface Window {
@@ -23,49 +23,70 @@ type CalculationResult = {
   };
 };
 
-var secretjs: any;
-const ACCOUNT_ADDRESS = "secret12ry9nf03e3dj54s7rukh08jwk25nuv0p2npfxj";
-const CONTRACT_ADDRESS = "secret19lqqp5vsaqj99vn5n7y4zntllqqj97evz4je9y";
-const MNEMONIC =
-  "leave mask dinner title adult satisfy track crumble test concert damp bracket eager turtle laptop actual lesson divert hub behave risk write daughter tuition";
-const CHAIN_ID = "pulsar-2";
-const NODE_URL = "http://rpc.pulsar.griptapejs.com:9091/";
+const CONTRACT_ADDRESS = "secret13ut7y0jzgjsh6qn3hrn6t2lspezxpr3tjptdn8";
+const CODE_ID = 460;
 
+// This endpoint is a reverse proxy for a main-net scrt node
+const NODE_URL = "https://elad.uksouth.cloudapp.azure.com";
+const CHAIN_ID = "secret-4";
+
+var secretjs: any;
 interface CalculationExecProps {}
 export const CalculationExec: React.FC<CalculationExecProps> = ({}) => {
   const { dispatch } = useContext(CalculationsContext);
-  const [selectedOperationIndex, setSelectedOperationIndex] =
-    useState<number>(0);
+  const [keplrReady, setKeplrReady] = useState<boolean>(false);
+
   const [n1, setN1] = useState<string | undefined>(undefined);
   const [n2, setN2] = useState<string | undefined>(undefined);
 
-  function isSqrt() {
+  const [selectedOperationIndex, setSelectedOperationIndex] =
+    useState<number>(0);
+  const isSqrt = () => {
     return selectedOperationIndex === 4;
-  }
+  };
 
   useEffect(() => {
     setupSecretClient();
   }, []);
 
   const setupSecretClient = async () => {
-    initializeSecretClient();
+    await setupKeplr();
   };
 
-  const initializeSecretClient = async () => {
-    const wallet = new Wallet(MNEMONIC);
-    const myAddress = wallet.address;
+  const setupKeplr = async () => {
+    const sleep = (ms: number) =>
+      new Promise((accept) => setTimeout(accept, ms));
+
+    // Wait for Keplr to be injected to the page
+    while (
+      !window.keplr ||
+      !window.getOfflineSignerOnlyAmino ||
+      !window.getEnigmaUtils
+    ) {
+      await sleep(10);
+    }
+
+    // Enable Keplr.
+    // This pops-up a window for the user to allow keplr access to the webpage.
+    await window.keplr.enable(CHAIN_ID);
+
+    const keplrOfflineSigner = window.getOfflineSignerOnlyAmino(CHAIN_ID);
+    const [{ address: myAddress }] = await keplrOfflineSigner.getAccounts();
 
     secretjs = await SecretNetworkClient.create({
       grpcWebUrl: NODE_URL,
       chainId: CHAIN_ID,
-      wallet: wallet,
+      wallet: keplrOfflineSigner,
       walletAddress: myAddress,
+      encryptionUtils: window.getEnigmaUtils(CHAIN_ID),
     });
+
+    setKeplrReady(true);
   };
 
   const operationPicker = () => {
     return (
-      <div>
+      <div style={{ marginBottom: "30px" }}>
         <label>
           Choose an arithmetic operation
           <select
@@ -82,10 +103,6 @@ export const CalculationExec: React.FC<CalculationExecProps> = ({}) => {
             )}
           </select>
         </label>
-
-        <p>
-          Perform: {CALCULATION_TYPES[selectedOperationIndex].operationName}!
-        </p>
       </div>
     );
   };
@@ -112,11 +129,12 @@ export const CalculationExec: React.FC<CalculationExecProps> = ({}) => {
   ) => {
     const inputParams = !isSqrt() ? [n1, n2] : n1;
 
-    const result: any = await secretjs.tx.compute.executeContract(
+    const contractHash = await secretjs.query.compute.codeHash(CODE_ID);
+    const result: any = (await secretjs.tx.compute.executeContract(
       {
-        sender: ACCOUNT_ADDRESS,
+        sender: secretjs.address,
         contractAddress: CONTRACT_ADDRESS,
-        // codeHash: CONTRACT_CODE_HASH, // optional but way faster
+        codeHash: contractHash, // optional but way faster
         msg: {
           [CALCULATION_TYPES[selectedOperationIndex].operationExecutionName]:
             inputParams,
@@ -126,7 +144,8 @@ export const CalculationExec: React.FC<CalculationExecProps> = ({}) => {
       {
         gasLimit: 100_000,
       }
-    );
+    )) as CalculationResult;
+
     const {
       calculation_result: { n, status },
     } = JSON.parse(fromUtf8(result.data[0])) as CalculationResult;
@@ -170,11 +189,22 @@ export const CalculationExec: React.FC<CalculationExecProps> = ({}) => {
     }
   };
 
+  if (!keplrReady) {
+    return (
+      <>
+        <h1>Waiting for Keplr wallet integration...</h1>
+      </>
+    );
+  }
+
   return (
     <form action="" onSubmit={performCalculation}>
       {operationPicker()}
       {calculationInput()}
-      <input type="submit" value="Calculate!" />
+      <input
+        type="submit"
+        value={`Calculate: ${CALCULATION_TYPES[selectedOperationIndex].operationName}`}
+      />
     </form>
   );
 };
